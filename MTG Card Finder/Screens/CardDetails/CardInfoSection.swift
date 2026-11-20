@@ -23,7 +23,7 @@ class CardInfoSection: ListSectionView {
         if let manaCost = card.manaCost, !manaCost.isEmpty {
             manaCostParts.append(manaCost)
         }
-        manaCostParts.append("\(card.cmc)")
+        manaCostParts.append("\(card.cmc ?? 0)")
         let manaCostPartsLabel = UILabel()
         manaCostPartsLabel.attributedText = CardUtilities
             .getManaCostAttributedText(for: manaCostParts.joined(separator: " · "))

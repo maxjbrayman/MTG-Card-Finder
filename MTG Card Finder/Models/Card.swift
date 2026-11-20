@@ -23,7 +23,7 @@ nonisolated struct Card: Codable, Hashable {
     let releasedAt: String
     let imageUris: CardImageURIs?
     let manaCost: String?
-    let cmc: Int
+    var cmc: Int?
     let colors: [String]? // mana cost colors
     let colorIdentity: [String] // includes colors in card details
     let setName: String
