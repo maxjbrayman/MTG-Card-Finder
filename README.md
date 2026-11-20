@@ -33,7 +33,7 @@ An iOS app for searching every Magic: The Gathering card. You can filter results
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/<your-username>/<repo-name>.git
+   git clone https://github.com/maxjbrayman/MTG-Card-Finder.git
    ```
 2. Open `MTG Card Finder.xcodeproj` in Xcode.
 3. Choose an iPhone simulator (for example, iPhone 17 Pro) from the device menu in the toolbar.
