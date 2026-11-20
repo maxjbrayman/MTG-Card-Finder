@@ -13,14 +13,17 @@ class CardDetailsVC: UIViewController {
     let cardStore: CardStore
     private let scrollView = ControlFriendlyScrollView<UIControl>()
     private let contentView = UIStackView()
-    private let imageView = UIImageView()
+    private let imageContainerView = UIView()
+    private let frontsideImageView = UIImageView()
+    private let backsideImageView = UIImageView()
     private let headerView = UIStackView()
     private let headerBackButton = UIButton()
     private let headerImagePlaceholderView = UIView()
     private let headerTitleView = UILabel()
     private let headerSaveButton = UIButton()
+    private let flipCardButton = UIButton()
     private let detailsHeaderView: CardDetailsHeader!
-    private let cardBodySection: CardBodyView!
+    private let cardBodySection = CardBodyView()
     private let cardInfoSection: CardInfoSection!
     private let cardPurchaseURIsSection: CardPurchaseURIsSection!
     
@@ -28,11 +31,28 @@ class CardDetailsVC: UIViewController {
     private let imageViewPadding: CGFloat = 20
     private let headerImageWidth: CGFloat = 50
     
+    private var primaryImageUri: String? {
+        card.displayImageUris?.png
+    }
+    private var secondaryImageUri: String? {
+        guard card.isDoubleSided else { return nil }
+        
+        return card.cardFaces?.last?.imageUris?.png
+    }
+    private var isCardFlipped = false {
+        didSet { flipCard() }
+    }
+    private var hideFlipButton = false {
+        didSet { updateFlipButton() }
+    }
+    
     init(card: Card, cardStore: CardStore) {
         self.card = card
         self.cardStore = cardStore
         detailsHeaderView = CardDetailsHeader(card: card)
-        cardBodySection = CardBodyView(card: card)
+        cardBodySection.bodyText = card.displayOracleText
+        cardBodySection.powerText = card.displayPower
+        cardBodySection.toughnessText = card.displayToughness
         cardInfoSection = CardInfoSection(card: card)
         cardPurchaseURIsSection = CardPurchaseURIsSection(
             purchaseURIs: card.purchaseUris
@@ -46,15 +66,21 @@ class CardDetailsVC: UIViewController {
         configureHeader()
         configureScrollView()
         configureContentView()
-        configureImageView()
+        configureImageContainerView()
+        configureFrontsideImageView()
+        configureBacksideImageView()
+        configureFlipCardButton()
         
         render()
     }
     
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
+        let imageViewHeight = imageContainerView.frame.height
+        let flipButtonHeight = flipCardButton.frame.height
         
-        let newInset = imageView.frame.height
+        let newInset = imageViewHeight + flipButtonHeight + 16
+        
         guard scrollView.contentInset.top != newInset else { return }
         
         let wasAtTop = scrollView.contentOffset.y <= -scrollView.adjustedContentInset.top
@@ -132,30 +158,105 @@ class CardDetailsVC: UIViewController {
         
         cardPurchaseURIsSection.onTapURI = onTapPurchaseLink(_:)
         contentView.addArrangedSubview(cardPurchaseURIsSection)
-
     }
     
-    private func configureImageView() {
-        view.addSubview(imageView)
-        imageView.translatesAutoresizingMaskIntoConstraints = false
+    private func configureImageContainerView() {
+        view.addSubview(imageContainerView)
+        imageContainerView.translatesAutoresizingMaskIntoConstraints = false
+        imageContainerView.isUserInteractionEnabled = false
         
         let width = view.bounds.width - (imageViewPadding * 2)
         let height = width / Card.imageAspectRatio
         
+        NSLayoutConstraint.activate(
+            [
+                imageContainerView.topAnchor
+                    .constraint(equalTo: headerView.bottomAnchor),
+                imageContainerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                imageContainerView.widthAnchor.constraint(equalToConstant: width),
+                imageContainerView.heightAnchor
+                    .constraint(equalToConstant: height)
+            ]
+        )
+    }
+    
+    private func configureFrontsideImageView() {
+        imageContainerView.addSubview(frontsideImageView)
+        frontsideImageView.translatesAutoresizingMaskIntoConstraints = false
+        
         Task {
-            let image = await ImageManager.shared.loadImage(from: card.imageUris?.png)
-            imageView.image = image
+            let image = await ImageManager.shared.loadImage(
+                from: primaryImageUri
+            )
+            frontsideImageView.image = image
         }
         
         NSLayoutConstraint.activate(
             [
-                imageView.topAnchor
-                    .constraint(equalTo: headerView.bottomAnchor),
-                imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                imageView.widthAnchor.constraint(equalToConstant: width),
-                imageView.heightAnchor.constraint(equalToConstant: height)
+                frontsideImageView.topAnchor
+                    .constraint(equalTo: imageContainerView.topAnchor),
+                frontsideImageView.centerXAnchor
+                    .constraint(equalTo: imageContainerView.centerXAnchor),
+                frontsideImageView.widthAnchor
+                    .constraint(equalTo: imageContainerView.widthAnchor),
+                frontsideImageView.heightAnchor
+                    .constraint(equalTo: imageContainerView.heightAnchor)
             ]
         )
+    }
+    
+    private func configureBacksideImageView() {
+        imageContainerView.addSubview(backsideImageView)
+        backsideImageView.translatesAutoresizingMaskIntoConstraints = false
+        backsideImageView.isHidden = true
+        
+        Task {
+            let image = await ImageManager.shared.loadImage(
+                from: secondaryImageUri
+            )
+            backsideImageView.image = image
+        }
+        
+        NSLayoutConstraint.activate(
+            [
+                backsideImageView.topAnchor
+                    .constraint(equalTo: imageContainerView.topAnchor),
+                backsideImageView.centerXAnchor
+                    .constraint(equalTo: imageContainerView.centerXAnchor),
+                backsideImageView.widthAnchor
+                    .constraint(equalTo: imageContainerView.widthAnchor),
+                backsideImageView.heightAnchor
+                    .constraint(equalTo: imageContainerView.heightAnchor)
+            ]
+        )
+    }
+    
+    private func configureFlipCardButton() {
+        if card.isDoubleSided {
+            flipCardButton.translatesAutoresizingMaskIntoConstraints = false
+            var buttonConfig = UIButton.Configuration.glass()
+            buttonConfig.title = "Flip"
+            buttonConfig.contentInsets = NSDirectionalEdgeInsets(
+                top: 12,
+                leading: 12,
+                bottom: 12,
+                trailing: 12
+            )
+            flipCardButton.configuration = buttonConfig
+            flipCardButton.addAction(
+                UIAction { [weak self] _ in
+                    self?.isCardFlipped.toggle()
+                },
+                for: .touchUpInside)
+            
+            view.addSubview(flipCardButton)
+            NSLayoutConstraint.activate([
+                flipCardButton.topAnchor
+                    .constraint(equalTo: frontsideImageView.bottomAnchor, constant: 16),
+                flipCardButton.centerXAnchor
+                    .constraint(equalTo: frontsideImageView.centerXAnchor)
+            ])
+        }
     }
     
     private func configureHeader() {
@@ -222,6 +323,44 @@ class CardDetailsVC: UIViewController {
         headerView.addArrangedSubview(headerSaveButton)
     }
     
+    private func flipCard() {
+        if isCardFlipped {
+            let face = card.cardFaces?.last
+            let text = face?.oracleText
+            let power = face?.power
+            let toughness = face?.toughness
+            
+            cardBodySection.bodyText = text
+            cardBodySection.powerText = power
+            cardBodySection.toughnessText = toughness
+        } else {
+            cardBodySection.bodyText = card.displayOracleText
+            cardBodySection.powerText = card.displayPower
+            cardBodySection.toughnessText = card.displayToughness
+        }
+        
+        let transitionOptions: UIView.AnimationOptions = isCardFlipped
+            ? [.transitionFlipFromRight, .showHideTransitionViews]
+            : [.transitionFlipFromLeft, .showHideTransitionViews]
+        
+        UIView
+            .transition(
+                with: imageContainerView,
+                duration: 0.6,
+                options: transitionOptions
+            ) {
+                frontsideImageView.isHidden = isCardFlipped
+                backsideImageView.isHidden = !isCardFlipped
+            }
+    }
+    
+    private func updateFlipButton() {
+        UIView.animate(withDuration: 0.3) {
+            flipCardButton.isEnabled = !hideFlipButton
+            flipCardButton.layer.opacity = hideFlipButton ? 0 : 1
+        }
+    }
+    
     private func onTapPurchaseLink(_ url: URL) {
         let safariVC = SFSafariViewController(url: url)
         present(safariVC, animated: true)
@@ -260,20 +399,22 @@ extension CardDetailsVC: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView.contentSize.height > 0 else { return }
         
-        imageView.transform = .identity
+        imageContainerView.transform = .identity
         
         let scrollY = scrollView.contentInset.top + scrollView.contentOffset.y
-        let imageViewHeight = imageView.bounds.height
-        let imageViewWidth = imageView.bounds.width
-        let imageViewCenterX = imageView.bounds.midX
-        let imageViewCenterY = imageView.bounds.midY
+        hideFlipButton = scrollY > 0
+        
+        let imageViewHeight = imageContainerView.bounds.height
+        let imageViewWidth = imageContainerView.bounds.width
+        let imageViewCenterX = imageContainerView.bounds.midX
+        let imageViewCenterY = imageContainerView.bounds.midY
         
         let finalX = headerImagePlaceholderView.convert(
             .zero,
             to: headerView
         ).x + (headerImageWidth / 4)
-                
-        let cardInitialX = imageView.convert(.zero, to: view).x
+        
+        let cardInitialX = imageContainerView.convert(.zero, to: view).x
         let deltaX = finalX - cardInitialX
         let anchorX = deltaX / imageViewWidth
         
@@ -298,10 +439,9 @@ extension CardDetailsVC: UIScrollViewDelegate {
         )
         var transform = CGAffineTransform(translationX: dx, y: dy + translateY)
         transform = transform.scaledBy(x: imageScale, y: imageScale)
-        
         transform = transform.translatedBy(x: -dx, y: -dy)
         
-        imageView.transform = transform
+        imageContainerView.transform = transform
         
         let titleOpacity = MathUtils.interpolate(
             value: imageScale,

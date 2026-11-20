@@ -20,18 +20,18 @@ class CardInfoSection: ListSectionView {
         r.append(("Colors", cardColorsLabel))
         
         var manaCostParts: [String] = []
-        if let manaCost = card.manaCost, !manaCost.isEmpty {
+        if let manaCost = card.displayManaCost, !manaCost.isEmpty {
             manaCostParts.append(manaCost)
         }
-        manaCostParts.append("\(card.cmc ?? 0)")
+        manaCostParts.append("\(card.displayCmc)")
         let manaCostPartsLabel = UILabel()
         manaCostPartsLabel.attributedText = CardUtilities
             .getManaCostAttributedText(for: manaCostParts.joined(separator: " · "))
         r.append(("Mana cost", manaCostPartsLabel))
         
-        if !card.typeLine.isEmpty {
+        if let typeLine = card.displayTypeLine, !typeLine.isEmpty {
             let typeLineLabel = UILabel()
-            typeLineLabel.text = card.typeLine
+            typeLineLabel.text = typeLine
             r.append(("Card type", typeLineLabel))
         }
         

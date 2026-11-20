@@ -21,7 +21,7 @@ class SavedCardsListView: ControlFriendlyScrollView<UIControl> {
         var sections: [ String : [Card] ] = [:]
         
         cards.forEach { card in
-            let cardType = CardType.getType(from: card.typeLine)
+            let cardType = CardType.getType(from: card.displayTypeLine)
             let sectionLabel = cardType?.label ?? "Other"
             sections[sectionLabel, default: []].append(card)
         }

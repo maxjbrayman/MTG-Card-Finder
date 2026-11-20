@@ -18,7 +18,7 @@ class CardDetailsHeader: UIStackView {
     
     init(card: Card) {
         self.card = card
-        self.manaCostView = ManaCostView(manaCost: card.manaCost)
+        self.manaCostView = ManaCostView(manaCost: card.displayManaCost)
         super.init(frame: .zero)
         
         configureView()
@@ -65,7 +65,7 @@ class CardDetailsHeader: UIStackView {
     private func configureCardTypeLabel() {
         addArrangedSubview(cardTypeLabel)
         cardTypeLabel.translatesAutoresizingMaskIntoConstraints = false
-        cardTypeLabel.text = card.typeLine
+        cardTypeLabel.text = card.displayTypeLine
         cardTypeLabel.numberOfLines = 2
         cardTypeLabel.minimumScaleFactor = 0.6
         cardTypeLabel.adjustsFontSizeToFitWidth = true

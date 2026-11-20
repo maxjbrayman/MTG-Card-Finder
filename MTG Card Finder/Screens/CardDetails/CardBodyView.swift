@@ -8,14 +8,21 @@
 import UIKit
 
 class CardBodyView: ListSectionView {
-    let card: Card
+    var bodyText: String? {
+        didSet { updateTextBody() }
+    }
+    var powerText: String? {
+        didSet { updatePowerAndToughness() }
+    }
+    var toughnessText: String? {
+        didSet { updatePowerAndToughness() }
+    }
     private let contentView = UIView()
     private let textBodyLabel = UILabel()
     private let powerAndToughnessView = UIView()
     private let powerAndToughnessLabel = UILabel()
     
-    init(card: Card) {
-        self.card = card
+    override init() {
         super.init()
         
         configure()
@@ -30,9 +37,6 @@ class CardBodyView: ListSectionView {
     
     private func configureTextBodyLabel() {
         textBodyLabel.translatesAutoresizingMaskIntoConstraints = false
-        let attributedText = CardUtilities.getManaCostAttributedText(for: card.oracleText)
-        isHidden = attributedText == nil
-        textBodyLabel.attributedText = attributedText
         textBodyLabel.numberOfLines = 0
         
         contentView.addSubview(textBodyLabel)
@@ -67,10 +71,8 @@ class CardBodyView: ListSectionView {
             ]
         )
         
-        guard let power = card.power, let toughness = card.toughness else { return }
         powerAndToughnessView.addSubview(powerAndToughnessLabel)
         powerAndToughnessLabel.translatesAutoresizingMaskIntoConstraints = false
-        powerAndToughnessLabel.text = "\(power) / \(toughness)"
         
         NSLayoutConstraint.activate([
             powerAndToughnessLabel.topAnchor
@@ -82,6 +84,23 @@ class CardBodyView: ListSectionView {
             powerAndToughnessLabel.bottomAnchor
                 .constraint(equalTo: powerAndToughnessView.bottomAnchor, constant: -4),
         ])
+    }
+    
+    private func updateTextBody() {
+        let attributedText = CardUtilities.getManaCostAttributedText(
+            for: bodyText
+        )
+        isHidden = attributedText == nil
+        textBodyLabel.attributedText = attributedText
+    }
+    
+    private func updatePowerAndToughness() {
+        if let powerText, let toughnessText {
+            powerAndToughnessView.isHidden = false
+            powerAndToughnessLabel.text = "\(powerText) / \(toughnessText)"
+        } else {
+            powerAndToughnessView.isHidden = true
+        }
     }
 
     required init(coder: NSCoder) {

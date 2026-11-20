@@ -17,22 +17,50 @@ struct CardPurchaseURIs: Codable {
     let cardhoarder: String?
 }
 
+struct CardFace: Codable {
+    let cmc: Int?
+    let colors: [String]?
+    let imageUris: CardImageURIs?
+    let manaCost: String?
+    let name: String
+    let oracleText: String?
+    let power: String?
+    let toughness: String?
+    let typeLine: String?
+}
+
 nonisolated struct Card: Codable, Hashable {
     let id: String
     let name: String
     let releasedAt: String
     let imageUris: CardImageURIs?
     let manaCost: String?
-    var cmc: Int?
+    let cmc: Int?
     let colors: [String]? // mana cost colors
     let colorIdentity: [String] // includes colors in card details
     let setName: String
     let rarity: String
-    let typeLine: String
+    let typeLine: String?
     let power: String?
     let toughness: String?
     let oracleText: String?
     let purchaseUris: CardPurchaseURIs?
+    let cardFaces: [CardFace]?
+    
+    var firstFace: CardFace? { cardFaces?.first }
+    
+    var displayCmc: Int { cmc ?? firstFace?.cmc ?? 0 }
+    var displayColors: [String]? { colors ?? firstFace?.colors }
+    var displayImageUris: CardImageURIs? { imageUris ?? firstFace?.imageUris }
+    var displayManaCost: String? { manaCost ?? firstFace?.manaCost }
+    var displayOracleText: String? { oracleText ?? firstFace?.oracleText }
+    var displayPower: String? { power ?? firstFace?.power }
+    var displayToughness: String? { toughness ?? firstFace?.toughness }
+    var displayTypeLine: String? { typeLine ?? firstFace?.typeLine }
+    
+    var isDoubleSided: Bool {
+        cardFaces != nil && imageUris == nil
+    }
     
     static func == (lhs: Card, rhs: Card) -> Bool {
         lhs.id == rhs.id

@@ -43,7 +43,7 @@ class CardPreviewView: UIView {
         }
         
         savedIndicator.isHidden = !isSaved
-        let url = card.imageUris?.png
+        let url = card.displayImageUris?.png
         currentURL = url
         imageLoadTask = Task { [weak self] in
             guard let url,
@@ -147,7 +147,7 @@ private class CardPlaceholderView: UIView {
     var card: Card? {
         didSet {
             if let card {
-                if let firstColor = card.colors?.first,
+                if let firstColor = card.displayColors?.first,
                    let cardColor = CardColor(rawValue: firstColor) {
                     backgroundColor = cardColor.color
                 } else { backgroundColor = CardColor.colorless.color }
